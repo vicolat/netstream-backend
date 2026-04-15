@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Netstream</title>
+
+<style>
+    body {
+        margin: 0;
+        font-family: Arial;
+        background: #0f0f0f;
+        color: white;
+    }
+
+    header {
+        padding: 20px;
+        text-align: center;
+        font-size: 30px;
+        color: #ffcc00;
+        font-weight: bold;
+    }
+
+    .controls {
+        text-align: center;
+        padding: 10px;
+    }
+
+    input {
+        padding: 10px;
+        margin: 5px;
+        border-radius: 5px;
+        border: none;
+        width: 180px;
+    }
+
+    button {
+        padding: 10px 14px;
+        margin: 5px;
+        border: none;
+        border-radius: 5px;
+        background: #ffcc00;
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background: #e6b800;
+    }
+
+    #movieList {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        padding: 20px;
+    }
+
+    .card {
+        background: #222;
+        border-radius: 10px;
+        overflow: hidden;
+        transition: 0.3s;
+    }
+
+    .card:hover {
+        transform: scale(1.05);
+    }
+
+    .card img {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+    }
+
+    .card-content {
+        padding: 10px;
+    }
+
+    .title {
+        font-weight: bold;
+    }
+
+    .genre {
+        color: #aaa;
+        font-size: 14px;
+    }
+
+    #result {
+        text-align: center;
+        margin-top: 10px;
+        color: lightgreen;
+    }
+</style>
+
+</head>
+
+<body>
+
+<header>🎬 NETSTREAM</header>
+
+<div class="controls">
+
+    <input id="title" placeholder="Movie Title">
+    <input id="genre" placeholder="Genre">
+
+    <br>
+
+    <button onclick="addMovie()">Add Movie</button>
+    <button onclick="getMovies()">Load Movies</button>
+
+    <br>
+
+    <input id="search" placeholder="Search movie..." onkeyup="searchMovies()">
+
+    <br>
+
+    <button onclick="filterMovies('all')">All</button>
+    <button onclick="filterMovies('Action')">Action</button>
+    <button onclick="filterMovies('Drama')">Drama</button>
+    <button onclick="filterMovies('Sci-Fi')">Sci-Fi</button>
+
+    <p id="result"></p>
+</div>
+
+<div id="movieList"></div>
+
+<script src="app.js"></script>
+
+</body>
+</html>
