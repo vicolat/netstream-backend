@@ -1,33 +1,40 @@
-const BASE_URL = "http://localhost:8080/movies";
+const BASE_URL = "http://13.218.169.179:8080/movies";
 
 let allMovies = [];
 
+/* LOAD MOVIES */
+function getMovies() {
+    fetch(BASE_URL)
+        .then(res => res.json())
+        .then(data => {
+            allMovies = data.data || data;
+            renderMovies(allMovies);
+        })
+        .catch(err => console.error("Fetch error:", err));
+}
 
-// =========================
-// ADD MOVIE
-// =========================
+/* ADD MOVIE */
 function addMovie() {
-
     const title = document.getElementById("title").value.trim();
     const genre = document.getElementById("genre").value.trim();
-
+    const trailerUrl = document.getElementById("trailerUrl").value.trim();
+    
     if (!title || !genre) {
-        document.getElementById("result").innerText =
-            "Please enter title and genre!";
+        document.getElementById("result").innerText = "Please enter title and genre!";
         document.getElementById("result").style.color = "red";
         return;
     }
 
     fetch(BASE_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, genre })
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ title, genre, trailerUrl })
     })
     .then(res => res.json())
-    .then(data => {
-
-        document.getElementById("result").innerText =
-            "Movie added successfully!";
+    .then(() => {
+        document.getElementById("result").innerText = "Movie added successfully!";
         document.getElementById("result").style.color = "lightgreen";
 
         document.getElementById("title").value = "";
@@ -37,62 +44,44 @@ function addMovie() {
     })
     .catch(err => {
         console.error(err);
-        document.getElementById("result").innerText =
-            "Error connecting to backend!";
+        document.getElementById("result").innerText = "Error adding movie!";
         document.getElementById("result").style.color = "red";
     });
 }
 
-
-// =========================
-// GET MOVIES
-// =========================
-function getMovies() {
-
-    fetch(BASE_URL)
-    .then(res => res.json())
-    .then(data => {
-
-        console.log("API RESPONSE:", data);
-
-        allMovies = data.data;
-
-        renderMovies(allMovies);
-    })
-    .catch(err => console.error(err));
-}
-
-
-// =========================
-// RENDER MOVIES (NETFLIX STYLE)
-// =========================
+/* RENDER MOVIES */
 function renderMovies(movies) {
-
     const container = document.getElementById("movieList");
     container.innerHTML = "";
 
     if (!movies || movies.length === 0) {
-        container.innerHTML = "<p style='text-align:center;'>No movies found</p>";
+        container.innerHTML = "<p style='text-align:center'>No movies found</p>";
         return;
     }
 
     movies.forEach(movie => {
-
         const card = document.createElement("div");
         card.className = "card";
 
+        /* TRAILER CLICK */
+        card.onclick = () => {
+            if (movie.trailerUrl) {
+                window.open(movie.trailerUrl, "_blank");
+            } else {
+                alert("No trailer available");
+            }
+        };
+
         const img = document.createElement("img");
-        img.src = `https://source.unsplash.com/300x200/?movie,cinema`;
+        img.src = "https://source.unsplash.com/300x200/?movie,cinema";
 
         const content = document.createElement("div");
         content.className = "card-content";
 
-        const title = document.createElement("div");
-        title.className = "title";
+        const title = document.createElement("h3");
         title.innerText = movie.title;
 
-        const genre = document.createElement("div");
-        genre.className = "genre";
+        const genre = document.createElement("p");
         genre.innerText = movie.genre;
 
         content.appendChild(title);
@@ -105,35 +94,5 @@ function renderMovies(movies) {
     });
 }
 
-
-// =========================
-// SEARCH
-// =========================
-function searchMovies() {
-
-    const value = document.getElementById("search").value.toLowerCase();
-
-    const filtered = allMovies.filter(movie =>
-        movie.title.toLowerCase().includes(value)
-    );
-
-    renderMovies(filtered);
-}
-
-
-// =========================
-// FILTER
-// =========================
-function filterMovies(genre) {
-
-    if (genre === "all") {
-        renderMovies(allMovies);
-        return;
-    }
-
-    const filtered = allMovies.filter(movie =>
-        movie.genre.toLowerCase().includes(genre.toLowerCase())
-    );
-
-    renderMovies(filtered);
-}
+/* AUTO LOAD */
+window.onload = getMovies;

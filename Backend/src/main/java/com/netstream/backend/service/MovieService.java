@@ -3,65 +3,60 @@ package com.netstream.backend.service;
 import com.netstream.backend.dto.MovieDTO;
 import com.netstream.backend.model.Movie;
 import com.netstream.backend.repository.MovieRepository;
-import com.netstream.backend.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class MovieService {
 
-    private final MovieRepository repository;
+    private final MovieRepository movieRepository;
 
-    public MovieService(MovieRepository repository) {
-        this.repository = repository;
+    public MovieService(MovieRepository movieRepository) {
+        this.movieRepository = movieRepository;
     }
 
     // CREATE
     public Movie addMovie(MovieDTO dto) {
 
         Movie movie = new Movie();
+
         movie.setTitle(dto.getTitle());
         movie.setGenre(dto.getGenre());
+        movie.setTrailerUrl(dto.getTrailerUrl());
+        movie.setPosterUrl(dto.getPosterUrl());
 
-        return repository.save(movie);
+        return movieRepository.save(movie);
     }
 
-    // GET ALL
+    // GET ALL MOVIES
     public List<Movie> getAllMovies() {
-        return repository.findAll();
+        return movieRepository.findAll();
     }
 
-    // GET BY ID
+    // GET ONE MOVIE
     public Movie getMovieById(String id) {
-        return repository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Movie not found with id: " + id)
-                );
+        return movieRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Movie not found"));
     }
 
-    // UPDATE
+    // UPDATE MOVIE
     public Movie updateMovie(String id, MovieDTO dto) {
 
-        Movie movie = repository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Movie not found with id: " + id)
-                );
+        Movie movie = movieRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Movie not found"));
 
         movie.setTitle(dto.getTitle());
         movie.setGenre(dto.getGenre());
+        movie.setTrailerUrl(dto.getTrailerUrl());
+        movie.setPosterUrl(dto.getPosterUrl());
 
-        return repository.save(movie);
+        return movieRepository.save(movie);
     }
 
-    // DELETE
+    // DELETE MOVIE
     public void deleteMovie(String id) {
-
-        Movie movie = repository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Movie not found with id: " + id)
-                );
-
-        repository.delete(movie);
+        movieRepository.deleteById(id);
     }
 }

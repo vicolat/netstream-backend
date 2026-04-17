@@ -2,122 +2,104 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Netstream</title>
+<title>NetStream Movies</title>
 
 <style>
-    body {
-        margin: 0;
-        font-family: Arial;
-        background: #0f0f0f;
-        color: white;
-    }
+body {
+    margin: 0;
+    font-family: Arial;
+    background: #0f0f0f;
+    color: white;
+}
 
-    header {
-        padding: 20px;
-        text-align: center;
-        font-size: 30px;
-        color: #ffcc00;
-        font-weight: bold;
-    }
+h1 {
+    text-align: center;
+    color: yellow;
+    padding: 10px;
+}
 
-    .controls {
-        text-align: center;
-        padding: 10px;
-    }
+.form {
+    text-align: center;
+    margin: 20px;
+}
 
-    input {
-        padding: 10px;
-        margin: 5px;
-        border-radius: 5px;
-        border: none;
-        width: 180px;
-    }
+input {
+    padding: 10px;
+    margin: 5px;
+}
 
-    button {
-        padding: 10px 14px;
-        margin: 5px;
-        border: none;
-        border-radius: 5px;
-        background: #ffcc00;
-        color: white;
-        font-weight: bold;
-        cursor: pointer;
-    }
+button {
+    padding: 10px 15px;
+    background: yellow;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+}
 
-    button:hover {
-        background: #e6b800;
-    }
+#result {
+    text-align: center;
+    margin-top: 10px;
+}
 
-    #movieList {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 15px;
-        padding: 20px;
-    }
+/* GRID */
+#movieList {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
 
-    .card {
-        background: #222;
-        border-radius: 10px;
-        overflow: hidden;
-        transition: 0.3s;
-    }
+/* CARD */
+.card {
+    background: black;
+    border: 1px solid yellow;
+    color: yellow;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+    transition: transform 0.3s ease;
+    cursor: pointer;
+}
 
-    .card:hover {
-        transform: scale(1.05);
-    }
+.card:hover {
+    transform: scale(1.05);
+}
 
-    .card img {
-        width: 100%;
-        height: 150px;
-        object-fit: cover;
-    }
+.card img {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    border-bottom: 1px solid yellow;
+}
 
-    .card-content {
-        padding: 10px;
-    }
+.card-content {
+    padding: 10px;
+}
 
-    .title {
-        font-weight: bold;
-    }
+.card-content h3 {
+    margin: 0;
+    font-size: 18px;
+    color: yellow;
+}
 
-    .genre {
-        color: #aaa;
-        font-size: 14px;
-    }
-
-    #result {
-        text-align: center;
-        margin-top: 10px;
-        color: lightgreen;
-    }
+.card-content p {
+    margin: 5px 0 0;
+    font-size: 14px;
+    color: white;
+}
 </style>
-
 </head>
 
 <body>
 
-<header>🎬 NETSTREAM</header>
+<h1>NETSTREAM MOVIES</h1>
 
-<div class="controls">
-
+<div class="form">
     <input id="title" placeholder="Movie Title">
     <input id="genre" placeholder="Genre">
-
-    <br>
-
+    <input id="trailerUrl" placeholder="YouTube Trailer URL">
     <button onclick="addMovie()">Add Movie</button>
     <button onclick="getMovies()">Load Movies</button>
-
-    <br>
-
-    <input id="search" placeholder="Search movie..." onkeyup="searchMovies()">
-
-    <br>
-
-    <button onclick="filterMovies('all')">All</button>
-    <button onclick="filterMovies('Action')">Action</button>
-    <button onclick="filterMovies('Drama')">Drama</button>
-    <button onclick="filterMovies('Sci-Fi')">Sci-Fi</button>
 
     <p id="result"></p>
 </div>
