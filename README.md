@@ -52,9 +52,20 @@ Backend (Spring Boot)
 → Runs on EC2 server (port 8080)  
 → Exposes REST API endpoints  
 
-Final Flow:
+---
+
+## 🚀 Deployment Flow
 
 GitHub → AWS EC2 → Nginx (Frontend) → Spring Boot (Backend API)
+
+---
+
+## 🔗 Request Flow
+
+User Browser  
+→ React Frontend (Nginx)  
+→ Spring Boot Backend API  
+→ Response returned to UI
 
 ---
 
