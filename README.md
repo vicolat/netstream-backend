@@ -1,3 +1,6 @@
+<img width="1898" height="964" alt="Screenshot 2026-04-23 061717" src="https://github.com/user-attachments/assets/c7957ada-358a-4ea9-b041-18767ba9b7ed" />
+
+
 # 🎬 NetStream – Full Stack Movie Streaming App
 
 A simple movie streaming web application built as part of my **DevOps learning journey**, focused on understanding how full-stack systems are integrated and deployed in real environments.
