@@ -12,6 +12,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # ✅ STEP 1: SETUP JAVA
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # ✅ STEP 2: BUILD JAR (THIS FIXES YOUR ERROR)
+      - name: Build Backend with Maven
+        run: |
+          cd Backend
+          mvn clean package -DskipTests
+
+      # ✅ STEP 3: AWS LOGIN
       - name: Configure AWS
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -23,17 +37,21 @@ jobs:
         id: ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      # ✅ STEP 4: BUILD DOCKER (NOW target/ EXISTS)
       - name: Build Backend Image
         run: docker build -t backend ./Backend
 
       - name: Tag Backend Image
         run: |
-          docker tag backend:latest ${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_BACKEND_REPO }}:latest
+          docker tag backend:latest \
+          ${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_BACKEND_REPO }}:latest
 
       - name: Push Backend Image
         run: |
-          docker push ${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_BACKEND_REPO }}:latest
+          docker push \
+          ${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_BACKEND_REPO }}:latest
 
+      # ✅ STEP 5: DEPLOY
       - name: Deploy Backend to EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -42,12 +60,14 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
-            | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+            | docker login --username AWS --password-stdin \
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
-            docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.ECR_BACKEND_REPO }}:latest
+            docker pull \
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_BACKEND_REPO }}:latest
 
             docker stop backend || true
             docker rm backend || true
 
             docker run -d -p 8080:8080 --name backend \
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.ECR_BACKEND_REPO }}:latest
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_BACKEND_REPO }}:latest

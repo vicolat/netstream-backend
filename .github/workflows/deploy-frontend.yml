@@ -19,22 +19,30 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Login ECR
+      - name: Login to ECR
         id: ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build Frontend Image
         run: docker build -t frontend ./Frontend
 
+      # ✅ FIX: Ensure repo is not empty
       - name: Tag Frontend Image
         run: |
-          docker tag frontend:latest ${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_FRONTEND_REPO }}:latest
+          if [ -z "${{ secrets.ECR_FRONTEND_REPO }}" ]; then
+            echo "ECR_FRONTEND_REPO is missing"
+            exit 1
+          fi
+
+          docker tag frontend:latest \
+          ${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_FRONTEND_REPO }}:latest
 
       - name: Push Frontend Image
         run: |
-          docker push ${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_FRONTEND_REPO }}:latest
+          docker push \
+          ${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_FRONTEND_REPO }}:latest
 
-      - name: Deploy Frontend to EC2
+      - name: Deploy Frontend
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_FRONTEND_HOST }}
@@ -42,12 +50,14 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
-            | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+            | docker login --username AWS --password-stdin \
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
-            docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.ECR_FRONTEND_REPO }}:latest
+            docker pull \
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_FRONTEND_REPO }}:latest
 
             docker stop frontend || true
             docker rm frontend || true
 
-            docker run -d -p 80:3000 --name frontend \
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.ECR_FRONTEND_REPO }}:latest
+            docker run -d --restart always -p 80:3000 --name frontend \
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_FRONTEND_REPO }}:latest
