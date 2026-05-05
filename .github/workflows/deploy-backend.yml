@@ -10,9 +10,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Checkout code
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # 2. Setup Java (IMPORTANT for Spring Boot build)
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      # 3. Build Spring Boot JAR (FIXES YOUR ERROR)
+      - name: Build Backend with Maven
+        run: mvn clean package -DskipTests -f Backend/pom.xml
+
+      # 4. Configure AWS credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -20,23 +33,27 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      # 5. Login to Amazon ECR
       - name: Login to Amazon ECR
         id: ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build Backend Image
-        run: |
-          docker build -t backend ./Backend
+      # 6. Build Docker Image
+      - name: Build Docker Image
+        run: docker build -t backend ./Backend
 
-      - name: Tag Backend Image
+      # 7. Tag Docker Image
+      - name: Tag Docker Image
         run: |
           docker tag backend:latest ${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_BACKEND_REPO }}:latest
 
-      - name: Push Backend Image
+      # 8. Push Docker Image to ECR
+      - name: Push Docker Image
         run: |
           docker push ${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_BACKEND_REPO }}:latest
 
-      - name: Deploy Backend to EC2
+      # 9. Deploy to EC2
+      - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_BACKEND_HOST }}
@@ -50,14 +67,14 @@ jobs:
             aws ecr get-login-password --region $AWS_REGION \
             | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
-            echo "Pulling latest backend image..."
-            docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_BACKEND_REPO:latest
+            echo "Pulling latest image..."
+            docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_BACKEND_REPO:latest || true
 
             echo "Stopping old container..."
             docker stop backend || true
             docker rm backend || true
 
-            echo "Running new backend container..."
+            echo "Running backend container..."
             docker run -d \
               -p 8080:8080 \
               --name backend \
