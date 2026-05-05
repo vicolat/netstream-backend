@@ -1,73 +1,65 @@
-name: Backend CI/CD
+name: Deploy Backend
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
 
 jobs:
-  deploy-backend:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      # ✅ STEP 1: SETUP JAVA
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      # ✅ STEP 2: BUILD JAR (THIS FIXES YOUR ERROR)
-      - name: Build Backend with Maven
-        run: |
-          cd Backend
-          mvn clean package -DskipTests
-
-      # ✅ STEP 3: AWS LOGIN
-      - name: Configure AWS
+      - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Login ECR
+      - name: Login to Amazon ECR
         id: ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      # ✅ STEP 4: BUILD DOCKER (NOW target/ EXISTS)
       - name: Build Backend Image
-        run: docker build -t backend ./Backend
+        run: |
+          docker build -t backend ./Backend
 
       - name: Tag Backend Image
         run: |
-          docker tag backend:latest \
-          ${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_BACKEND_REPO }}:latest
+          docker tag backend:latest ${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_BACKEND_REPO }}:latest
 
       - name: Push Backend Image
         run: |
-          docker push \
-          ${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_BACKEND_REPO }}:latest
+          docker push ${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_BACKEND_REPO }}:latest
 
-      # ✅ STEP 5: DEPLOY
       - name: Deploy Backend to EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_BACKEND_HOST }}
           username: ${{ secrets.EC2_BACKEND_USER }}
           key: ${{ secrets.EC2_BACKEND_SSH_KEY }}
+
+          envs: AWS_REGION,AWS_ACCOUNT_ID,ECR_BACKEND_REPO,MONGODB_URI
+
           script: |
-            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
-            | docker login --username AWS --password-stdin \
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+            echo "Logging into ECR..."
+            aws ecr get-login-password --region $AWS_REGION \
+            | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
-            docker pull \
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_BACKEND_REPO }}:latest
+            echo "Pulling latest backend image..."
+            docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_BACKEND_REPO:latest
 
+            echo "Stopping old container..."
             docker stop backend || true
             docker rm backend || true
 
-            docker run -d -p 8080:8080 --name backend \
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_BACKEND_REPO }}:latest
+            echo "Running new backend container..."
+            docker run -d \
+              -p 8080:8080 \
+              --name backend \
+              -e MONGODB_URI=$MONGODB_URI \
+              $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_BACKEND_REPO:latest
