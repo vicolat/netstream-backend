@@ -32,7 +32,7 @@ jobs:
         run: mvn clean package -DskipTests -f Backend/pom.xml
 
       # =========================
-      # 4. AWS Credentials
+      # 4. Configure AWS Credentials
       # =========================
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -42,7 +42,7 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       # =========================
-      # 5. Login to ECR
+      # 5. Login to Amazon ECR
       # =========================
       - name: Login to Amazon ECR
         id: ecr
@@ -62,14 +62,14 @@ jobs:
           docker tag backend:latest ${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_BACKEND_REPO }}:latest
 
       # =========================
-      # 8. Push Image
+      # 8. Push Docker Image
       # =========================
       - name: Push Image
         run: |
           docker push ${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_BACKEND_REPO }}:latest
 
       # =========================
-      # 9. Deploy to EC2 (FIXED & SAFE)
+      # 9. Deploy to EC2
       # =========================
       - name: Deploy Backend to EC2
         uses: appleboy/ssh-action@v1.0.3
@@ -78,36 +78,19 @@ jobs:
           username: ${{ secrets.EC2_BACKEND_USER }}
           key: ${{ secrets.EC2_BACKEND_SSH_KEY }}
 
-          # IMPORTANT: pass variables properly
-          envs: AWS_REGION,AWS_ACCOUNT_ID,ECR_BACKEND_REPO,MONGODB_URI
+          envs: AWS_REGION,ECR_BACKEND_REPO,MONGODB_URI
 
           script: |
             echo "=================================="
             echo "Backend Deployment Starting"
             echo "=================================="
 
-            # Validate AWS variables
-            if [ -z "$AWS_ACCOUNT_ID" ]; then
-              echo "ERROR: AWS_ACCOUNT_ID missing"
-              exit 1
-            fi
-
-            if [ -z "$AWS_REGION" ]; then
-              echo "ERROR: AWS_REGION missing"
-              exit 1
-            fi
-
-            if [ -z "$ECR_BACKEND_REPO" ]; then
-              echo "ERROR: ECR_BACKEND_REPO missing"
-              exit 1
-            fi
-
             echo "Logging into ECR..."
             aws ecr get-login-password --region $AWS_REGION \
-            | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+            | docker login --username AWS --password-stdin ${{ steps.ecr.outputs.registry }}
 
             echo "Pulling latest image..."
-            docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_BACKEND_REPO:latest || true
+            docker pull ${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_BACKEND_REPO }}:latest || true
 
             echo "Stopping old container..."
             docker stop backend || true
@@ -119,6 +102,6 @@ jobs:
               --name backend \
               --restart always \
               -e MONGODB_URI="$MONGODB_URI" \
-              $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_BACKEND_REPO:latest
+              ${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_BACKEND_REPO }}:latest
 
             echo "Backend deployed successfully 🚀"
